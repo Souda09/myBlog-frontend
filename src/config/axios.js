@@ -1,18 +1,24 @@
-// frontend/src/config/axios.js
 import axios from 'axios';
 
-// Create axios instance with default config
+// Create axios instance
 const axiosInstance = axios.create({
   baseURL: 'https://blog-app-backend-rouge-tau.vercel.app/api',
-  withCredentials: true, // Important for cookies
+  withCredentials: true, // Keep for cookie support
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-// Request interceptor (optional - for debugging)
+// ✅ Request interceptor - Add token to every request
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     console.log(`📤 Making ${config.method.toUpperCase()} request to: ${config.url}`);
     return config;
   },
@@ -22,7 +28,7 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor (optional - for error handling)
+// Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => {
     console.log(`📥 Response received from: ${response.config.url}`);
@@ -30,15 +36,22 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      // Server responded with error status
       console.error('Response error:', error.response.data);
       
-      // Handle specific error codes
+      // ✅ Handle 401 - Token expired or invalid
+      if (error.response.status === 401) {
+        console.log('Unauthorized! Clearing localStorage and redirecting...');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        delete axiosInstance.defaults.headers.common['Authorization'];
+        
+        // Redirect to login if not already there
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+          window.location.href = '/login';
+        }
+      }
+      
       switch (error.response.status) {
-        case 401:
-          console.log('Unauthorized! Redirecting to login...');
-          // You can redirect to login page here if needed
-          break;
         case 403:
           console.log('Forbidden! You don\'t have permission.');
           break;
@@ -52,10 +65,8 @@ axiosInstance.interceptors.response.use(
           console.log('Something went wrong!');
       }
     } else if (error.request) {
-      // Request was made but no response
       console.error('No response from server:', error.request);
     } else {
-      // Something else happened
       console.error('Error:', error.message);
     }
     return Promise.reject(error);
