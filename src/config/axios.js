@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'https://blog-app-backend-rouge-tau.vercel.app/api',
   withCredentials: true, // Important for cookies
   headers: {
     'Content-Type': 'application/json',
