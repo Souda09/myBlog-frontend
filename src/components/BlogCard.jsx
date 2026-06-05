@@ -102,18 +102,34 @@ const BlogCard = ({ blog }) => {
     hover: { scale: 1.05, transition: { duration: 0.3 } }
   };
 
+  // ✅ Get correct image URL - Supports Cloudinary, Local, and External
   const getImageUrl = () => {
     if (!blog.image) return null;
-    if (blog.image.startsWith('http')) return blog.image;
     
-    let imagePath = blog.image;
-    if (!imagePath.startsWith('/uploads/') && !imagePath.startsWith('uploads/')) {
-      imagePath = '/uploads/' + imagePath;
+    // ✅ Cloudinary URL (starts with https)
+    if (blog.image.startsWith('http')) {
+      return blog.image;
     }
-    if (!imagePath.startsWith('/')) {
-      imagePath = '/' + imagePath;
+    
+    // ✅ Local development fallback (only for local testing)
+    if (process.env.NODE_ENV === 'development') {
+      let imagePath = blog.image;
+      if (!imagePath.startsWith('/uploads/') && !imagePath.startsWith('uploads/')) {
+        imagePath = '/uploads/' + imagePath;
+      }
+      if (!imagePath.startsWith('/')) {
+        imagePath = '/' + imagePath;
+      }
+      return `http://localhost:5000${imagePath}`;
     }
-    return `http://localhost:5000${imagePath}`;
+    
+    // ✅ Production fallback - Cloudinary placeholder
+    return null;
+  };
+
+  // ✅ Local SVG placeholder (no external dependency)
+  const getPlaceholderImage = () => {
+    return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"%3E%3Crect width="400" height="300" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" font-size="20" fill="%239ca3af" text-anchor="middle" dy=".3em"%3E📝 No Image%3C/text%3E%3C/svg%3E';
   };
 
   const imageUrl = getImageUrl();
@@ -145,9 +161,12 @@ const BlogCard = ({ blog }) => {
                   imageRendering: '-webkit-optimize-contrast'
                 }}
                 onLoad={() => setImageLoaded(true)}
-                onError={() => {
+                onError={(e) => {
+                  console.error('Image load error:', imageUrl);
                   setImgError(true);
                   setImageLoaded(true);
+                  // ✅ Fallback to placeholder
+                  e.target.src = getPlaceholderImage();
                 }}
                 loading="lazy"
               />
@@ -171,12 +190,18 @@ const BlogCard = ({ blog }) => {
           
           <div className="flex items-center justify-between text-xs text-gray-500">
             <div className="flex items-center gap-2">
-              <FiUser className="text-purple-500 text-sm" />
-              <span>{blog.author?.name?.split(' ')[0] || 'Anonymous'}</span>
+              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold">
+                {blog.author?.name?.charAt(0) || 'U'}
+              </div>
+              <span className="font-medium">{blog.author?.name?.split(' ')[0] || 'Anonymous'}</span>
             </div>
             <div className="flex items-center gap-2">
               <FiCalendar className="text-purple-500 text-sm" />
-              <span>{new Date(blog.createdAt).toLocaleDateString()}</span>
+              <span>{new Date(blog.createdAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              })}</span>
             </div>
           </div>
         </div>

@@ -330,7 +330,7 @@
 
 
 
-// frontend/src/pages/BlogDetail.jsx
+/// frontend/src/pages/BlogDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -338,7 +338,7 @@ import { useBlogs } from '../context/BlogContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import axiosInstance from '../config/axios.js';
 import ReactMarkdown from 'react-markdown';
-import { FiCalendar, FiUser, FiEdit, FiTrash2, FiArrowLeft, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
+import { FiCalendar, FiUser, FiEdit, FiTrash2, FiArrowLeft, FiMaximize2, FiMinimize2, FiImage } from 'react-icons/fi';
 
 const BlogDetail = () => {
   const { id } = useParams();
@@ -375,20 +375,33 @@ const BlogDetail = () => {
     }
   };
 
+  // ✅ Updated getImageUrl - Supports Cloudinary, Local, and Production
   const getImageUrl = () => {
     if (!blog?.image) return null;
-    if (blog.image.startsWith('http')) return blog.image;
     
-    let imagePath = blog.image;
-    if (imagePath.startsWith('uploads/')) {
-      imagePath = '/' + imagePath;
-    } else if (!imagePath.startsWith('/uploads/') && !imagePath.startsWith('http')) {
-      imagePath = '/uploads/' + imagePath;
+    // ✅ Cloudinary URL (starts with https)
+    if (blog.image.startsWith('http')) {
+      return blog.image;
     }
-    if (!imagePath.startsWith('/')) {
-      imagePath = '/' + imagePath;
+    
+    // ✅ Local development fallback
+    if (process.env.NODE_ENV === 'development') {
+      let imagePath = blog.image;
+      if (imagePath.startsWith('uploads/')) {
+        imagePath = '/' + imagePath;
+      } else if (!imagePath.startsWith('/uploads/')) {
+        imagePath = '/uploads/' + imagePath;
+      }
+      return `http://localhost:5000${imagePath}`;
     }
-    return `http://localhost:5000${imagePath}`;
+    
+    // ✅ Production - return null (will show placeholder)
+    return null;
+  };
+
+  // ✅ Local placeholder image
+  const getPlaceholderImage = () => {
+    return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400"%3E%3Crect width="800" height="400" fill="%23374151"/%3E%3Ctext x="50%25" y="50%25" font-size="24" fill="%239ca3af" text-anchor="middle" dy=".3em"%3E📷 No Image Available%3C/text%3E%3C/svg%3E';
   };
 
   if (loading) {
@@ -402,11 +415,12 @@ const BlogDetail = () => {
   if (!blog) return null;
 
   const imageUrl = getImageUrl();
+  const showImage = imageUrl && !imageError;
 
   return (
     <>
       {/* Fullscreen Image Modal */}
-      {fullscreenImage && imageUrl && !imageError && (
+      {fullscreenImage && showImage && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -444,33 +458,44 @@ const BlogDetail = () => {
 
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Full Width Image Section */}
-          {imageUrl && !imageError && (
-            <div className="relative w-full bg-gradient-to-br from-gray-900 to-gray-800">
-              {!imageLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          <div className="relative w-full bg-gradient-to-br from-gray-900 to-gray-800 min-h-[300px]">
+            {showImage ? (
+              <>
+                {!imageLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                  </div>
+                )}
+                <div className="relative">
+                  <img
+                    src={imageUrl}
+                    alt={blog.title}
+                    className={`w-full max-h-[600px] object-contain bg-gradient-to-br from-gray-900 to-gray-800 transition-opacity duration-500 ${
+                      imageLoaded ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    style={{ objectPosition: 'center' }}
+                    onLoad={() => setImageLoaded(true)}
+                    onError={(e) => {
+                      setImageError(true);
+                      setImageLoaded(true);
+                      e.target.src = getPlaceholderImage();
+                    }}
+                  />
+                  <button
+                    onClick={() => setFullscreenImage(true)}
+                    className="absolute bottom-4 right-4 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-300 hover:scale-110 backdrop-blur-sm"
+                  >
+                    <FiMaximize2 className="text-xl" />
+                  </button>
                 </div>
-              )}
-              <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt={blog.title}
-                  className={`w-full max-h-[600px] object-contain bg-gradient-to-br from-gray-900 to-gray-800 transition-opacity duration-500 ${
-                    imageLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  style={{ objectPosition: 'center' }}
-                  onLoad={() => setImageLoaded(true)}
-                  onError={() => setImageError(true)}
-                />
-                <button
-                  onClick={() => setFullscreenImage(true)}
-                  className="absolute bottom-4 right-4 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-300 hover:scale-110 backdrop-blur-sm"
-                >
-                  <FiMaximize2 className="text-xl" />
-                </button>
+              </>
+            ) : (
+              <div className="w-full h-[300px] flex flex-col items-center justify-center gap-4">
+                <FiImage className="text-6xl text-purple-400" />
+                <p className="text-gray-400 font-medium">No Image Available</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
           
           <div className="p-8 md:p-12">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4 leading-tight">
@@ -498,7 +523,7 @@ const BlogDetail = () => {
             </div>
 
             {user && blog.author && user._id === blog.author._id && (
-              <div className="flex gap-3 mb-8">
+              <div className="flex flex-wrap gap-3 mb-8">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
