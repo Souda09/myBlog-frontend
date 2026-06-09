@@ -1,11 +1,11 @@
-// frontend/src/pages/EditBlog.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useBlogs } from '../context/BlogContext.jsx';
-import axiosInstance from '../config/axios.js';
-import { FiAlertCircle, FiCheckCircle, FiImage } from 'react-icons/fi';
+import { useBlogs } from '../context/BlogContext';
+import axiosInstance from '../config/axios';
+import { FiAlertCircle, FiCheckCircle, FiImage, FiUpload } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const EditBlog = () => {
   const { id } = useParams();
@@ -57,39 +57,33 @@ const EditBlog = () => {
     const result = await updateBlog(id, title, content, image);
     if (result.success) {
       setSuccess('Blog updated successfully!');
-      setTimeout(() => {
-        navigate(`/blog/${id}`);
-      }, 1500);
+      setTimeout(() => navigate(`/blog/${id}`), 1500);
     } else {
       setError(result.error);
     }
     setLoading(false);
   };
 
-  if (fetching) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
-    );
-  }
+  if (fetching) return <LoadingSpinner />;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl shadow-xl p-8"
+        className="bg-white rounded-3xl shadow-xl p-8"
       >
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Edit Blog</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          Edit Blog
+        </h1>
 
         {error && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center gap-2">
+          <motion.div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl flex items-center gap-2">
             <FiAlertCircle /> {error}
           </motion.div>
         )}
         {success && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg flex items-center gap-2">
+          <motion.div className="mb-4 p-3 bg-green-100 text-green-700 rounded-xl flex items-center gap-2">
             <FiCheckCircle /> {success}
           </motion.div>
         )}
@@ -101,16 +95,16 @@ const EditBlog = () => {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
               required
             />
           </div>
 
           <div>
             <label className="block text-gray-700 font-semibold mb-2">Featured Image</label>
-            <div className="flex items-center gap-4">
-              <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg flex items-center gap-2 transition">
-                <FiImage /> Change Image
+            <div className="flex items-center gap-4 flex-wrap">
+              <label className="cursor-pointer bg-gradient-to-r from-purple-600 to-pink-600 text-white px-5 py-2 rounded-xl flex items-center gap-2 hover:shadow-lg transition-all">
+                <FiUpload /> Change Image
                 <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
               </label>
               {(imagePreview || existingImage) && (
@@ -118,7 +112,7 @@ const EditBlog = () => {
               )}
             </div>
             {existingImage && !imagePreview && (
-              <img src={`http://localhost:5000${existingImage}`} alt="Current" className="mt-3 h-32 w-32 object-cover rounded-lg" />
+              <img src={existingImage} alt="Current" className="mt-3 h-32 w-32 object-cover rounded-xl shadow-md" />
             )}
             {imagePreview && (
               <motion.img
@@ -126,7 +120,7 @@ const EditBlog = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 src={imagePreview}
                 alt="Preview"
-                className="mt-3 h-40 w-40 object-cover rounded-lg"
+                className="mt-3 h-32 w-32 object-cover rounded-xl shadow-md"
               />
             )}
           </div>
@@ -137,12 +131,12 @@ const EditBlog = () => {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows="12"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
               required
             />
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="bg-gray-50 p-4 rounded-xl">
             <h3 className="font-semibold mb-2">Preview</h3>
             <div className="prose max-w-none">
               <ReactMarkdown>{content.substring(0, 300)}</ReactMarkdown>
@@ -156,7 +150,7 @@ const EditBlog = () => {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+              className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
             >
               {loading ? 'Updating...' : 'Update Blog'}
             </motion.button>
@@ -165,7 +159,7 @@ const EditBlog = () => {
               whileTap={{ scale: 0.98 }}
               type="button"
               onClick={() => navigate(`/blog/${id}`)}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-6 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all"
             >
               Cancel
             </motion.button>

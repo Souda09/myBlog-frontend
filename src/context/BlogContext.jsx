@@ -1,4 +1,3 @@
-// frontend/src/context/BlogContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axiosInstance from '../config/axios';
 
@@ -13,7 +12,7 @@ export const BlogProvider = ({ children }) => {
   const fetchBlogs = async () => {
     try {
       const { data } = await axiosInstance.get('/blogs');
-      setBlogs(data.blogs || data); // Handle both response formats
+      setBlogs(data.blogs || []);
     } catch (error) {
       console.error('Fetch blogs error:', error);
     } finally {
@@ -35,14 +34,10 @@ export const BlogProvider = ({ children }) => {
       const { data } = await axiosInstance.post('/blogs', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const newBlog = data.blog || data;
-      setBlogs(prev => [newBlog, ...prev]);
-      return { success: true, blog: newBlog };
+      setBlogs(prev => [data.blog, ...prev]);
+      return { success: true, blog: data.blog };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Failed to create blog' 
-      };
+      return { success: false, error: error.response?.data?.message };
     }
   };
 
@@ -56,14 +51,10 @@ export const BlogProvider = ({ children }) => {
       const { data } = await axiosInstance.put(`/blogs/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const updatedBlog = data.blog || data;
-      setBlogs(prev => prev.map(blog => blog._id === id ? updatedBlog : blog));
-      return { success: true, blog: updatedBlog };
+      setBlogs(prev => prev.map(blog => blog._id === id ? data.blog : blog));
+      return { success: true, blog: data.blog };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Failed to update blog' 
-      };
+      return { success: false, error: error.response?.data?.message };
     }
   };
 
@@ -73,17 +64,16 @@ export const BlogProvider = ({ children }) => {
       setBlogs(prev => prev.filter(blog => blog._id !== id));
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Failed to delete blog' 
-      };
+      return { success: false, error: error.response?.data?.message };
     }
   };
 
+  // ✅ Sirf current user ke blogs fetch karega
   const getUserBlogs = async () => {
     try {
       const { data } = await axiosInstance.get('/blogs/my-blogs');
-      return data.blogs || data;
+      console.log('My blogs response:', data);
+      return data.blogs || [];
     } catch (error) {
       console.error('Get user blogs error:', error);
       return [];
@@ -92,13 +82,7 @@ export const BlogProvider = ({ children }) => {
 
   return (
     <BlogContext.Provider value={{ 
-      blogs, 
-      loading, 
-      createBlog, 
-      updateBlog, 
-      deleteBlog, 
-      getUserBlogs, 
-      fetchBlogs 
+      blogs, loading, createBlog, updateBlog, deleteBlog, getUserBlogs, fetchBlogs 
     }}>
       {children}
     </BlogContext.Provider>
